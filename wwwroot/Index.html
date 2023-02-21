@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Flilia - SignalR</title>
+</head>
+<body>
+    <div>
+        <div>Online Users:</div>
+        <div><span id="usersOnline" /> </div>
+    </div>
+
+    <div>
+        User Name:<br />
+        <input id="userName" type="text" /><br /><br />
+        Message:<br />
+        <input type="text" id="message" /><br /><br />
+        <input type="button" id="sendBtn" value="Send" disabled="disabled" />
+    </div>
+    <div id="chatroom"></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+    <script>
+        const hubConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/chat")
+            .build();
+
+        hubConnection.start()
+            .then(function () {
+                document.getElementById("sendBtn").disabled = false;
+            })
+            .catch(function (err) {
+                return console.error(err.toString());
+            });
+
+            document.getElementById("sendBtn").addEventListener("click", function () {
+                const userName = document.getElementById("userName").value;   // get a user name
+                const message = document.getElementById("message").value;
+
+                hubConnection.invoke("Send", message, userName) // send a msg and userName to the srv
+                    .catch(function (err) {
+                        return console.error(err.toString());
+                    });
+            });
+
+            // get a msg from the srv
+            hubConnection.on("Receive", function (message, userName) {
+
+                const userNameElem = document.createElement("b");
+                userNameElem.textContent = `${userName}: `;
+
+                const elem = document.createElement("p");
+                elem.appendChild(userNameElem);
+                elem.appendChild(document.createTextNode(message));
+
+                const firstElem = document.getElementById("chatroom").firstChild;
+                document.getElementById("chatroom").insertBefore(elem, firstElem);
+            });
+
+            // get a msg from the srv
+            hubConnection.on("GetUsersCounter", function (UsersCounter) {
+                document.getElementById("usersOnline").innerHTML = UsersCounter;
+            });
+    </script>
+</body>
+</html>
